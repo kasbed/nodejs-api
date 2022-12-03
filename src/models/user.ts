@@ -25,6 +25,11 @@ const userSchema: Schema = new Schema(
       type: Boolean,
       required: true
     },
+    admin: {
+      type: Boolean,
+      default: false,
+      required: true
+    },
     profilePic: {
       type: String
     }

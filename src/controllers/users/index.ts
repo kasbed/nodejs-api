@@ -1,6 +1,7 @@
 import { Response, Request } from 'express'
 import { IUser } from './../../types/user'
 import User from '../../models/user'
+import { hashPassword } from '../../utils/password.utils'
 
 const getUsers = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -24,7 +25,7 @@ const addUser = async (req: Request, res: Response): Promise<void> => {
   try {
     type NewType = Pick<
       IUser,
-      'name' | 'lastName' | 'password' | 'email' | 'profilePic'
+      'name' | 'lastName' | 'password' | 'email' | 'profilePic' | 'admin'
     >
 
     const body = req.body as NewType
@@ -32,10 +33,11 @@ const addUser = async (req: Request, res: Response): Promise<void> => {
     const user: IUser = new User({
       name: body.name,
       lastName: body.lastName,
-      password: body.password, //TODO: do password encryption here instead of plain text
+      password: hashPassword(body.password), 
       email: body.email,
       profilePic: body.profilePic || 'genericimage', //TODO: do generic profile image base64 an return if user don't have any
-      active: true
+      active: true,
+      admin: body.admin || false
     })
 
     const newUser: IUser = await user.save()
@@ -51,9 +53,10 @@ const updateUser = async (req: Request, res: Response): Promise<void> => {
       params: { id },
       body
     } = req
+    const {password, ...rest} = body
     const user: IUser | null = await User.findByIdAndUpdate(
       { _id: id },
-      body //TODO: password and profile picture management
+      {password: hashPassword(password), ...rest} //TODO: password and profile picture management
     )
     res.status(user ? 200 : 404).json(
       user
@@ -92,27 +95,27 @@ const disableUser = async (req: Request, res: Response): Promise<void> => {
 }
 
 const enableUser = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const {
-        params: { id },
-        body
-      } = req
-      const user: IUser | null = await User.findByIdAndUpdate(
-        { _id: id },
-        { active: true }
-      )
-      res.status(user ? 200 : 404).json(
-        user
-          ? {
-              message: 'User disabled',
-              id: user?._id
-            }
-          : { message: 'User not found' }
-      )
-    } catch (error) {
-      throw error
-    }
+  try {
+    const {
+      params: { id },
+      body
+    } = req
+    const user: IUser | null = await User.findByIdAndUpdate(
+      { _id: id },
+      { active: true }
+    )
+    res.status(user ? 200 : 404).json(
+      user
+        ? {
+            message: 'User disabled',
+            id: user?._id
+          }
+        : { message: 'User not found' }
+    )
+  } catch (error) {
+    throw error
   }
+}
 
 const deleteUser = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -127,4 +130,12 @@ const deleteUser = async (req: Request, res: Response): Promise<void> => {
   }
 }
 
-export { getUsers, getUser, addUser, updateUser, deleteUser, disableUser, enableUser }
+export {
+  getUsers,
+  getUser,
+  addUser,
+  updateUser,
+  deleteUser,
+  disableUser,
+  enableUser
+}

@@ -6,5 +6,6 @@ export interface IUser extends Document {
   password: string
   email: string
   active: boolean
-  profilePic: string
+  profilePic: string,
+  admin: boolean
 }
